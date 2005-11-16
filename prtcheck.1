@@ -1,0 +1,35 @@
+.\" 
+.\" prtcheck manual page.
+.\" (C) 2003 by Martin Opel <mo@obbl-net.de> 
+.\"
+.TH prtcheck 1
+.SH NAME
+prtcheck \- check the port in the current directory
+.SH SYNOPSIS
+.PP
+.B prtcheck
+[ \-\-root ]
+.SH DESCRIPTION
+
+The \fIprtcheck\fP script checks the following things: existance of 
+Pkgfile, .footprint and .md5sum. It warns, if non-root users are found in
+the \.footprint and
+the Pkgfile is checked for the existence of the fields Description, URL, 
+Packager and a "Depends on" line. If something misses for a correct port,
+\fIprtcheck\fP exits with 1.
+
+.SH OPTIONS
+The following options are supported:
+.TP
+.I "\--root"
+This option allows you to create ports as a normal user, which helps you to
+find buggy Makefiles of source code packages, which try to install directly
+in /usr/local or ignore DESTDIR variables. The result is a .footprint with
+uid/gid entries with the uid/gid of the user, who called \fIpkgmk\fP. 
+\fIprtcheck\fP warns, if it finds such uid/gid entries, the --root option
+replaces them with root/root.
+
+.PP
+.SH AUTHOR
+
+\fIprtcheck\fP was written by Martin Opel <mo@obbl-net.de> for CRUX Linux.

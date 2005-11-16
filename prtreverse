@@ -1,0 +1,283 @@
+#!/bin/bash
+#
+#   prtreverse - create a crux package from files already installed
+#                on the hard disk.
+#
+#	Copyright (c) 2003 by Simone Rota                  <sip@varlock.com>
+#
+#	*************************************************************************
+#	*                                                                       *
+#	* This program is free software; you can redistribute it and/or modify  *
+#	* it under the terms of the GNU General Public License as published by  *
+#	* the Free Software Foundation; either version 2 of the License, or     *
+#	* (at your option) any later version.                                   *
+#	*                                                                       *
+#	*************************************************************************
+#
+#   **** USE AT YOUR OWN RISK ****
+#
+
+VERSION="0.1"
+
+info() {
+    echo "=======> $1"
+}
+
+note() {
+    echo "=======> NOTE: $1"
+}
+
+error() {
+    echo "=======> ERROR: $1"
+}
+
+usage() {
+    echo "Usage: prtreverse [-r] [-k] [-o] [-p] <path>"
+    exit 1
+}
+
+showversion() {
+    echo "prtreverse" $VERSION
+	echo "(c) 2003 by Simone Rota"
+	echo "This program is distributed under the GNU GPL license"
+}
+
+interrupted() {
+    echo "=======> operation interrupted."
+    exit 1
+}
+
+checkparams() {
+# Do some test on given parameters.
+    if [ -z "$prtdir" ]; then
+        usage
+		exit 1
+    fi	
+
+    if [ ! -d "$prtdir" ]; then
+        echo "'$prtdir': directory not found"
+    	exit -1
+    fi
+
+    if [ ! -f "$prtdir"/Pkgfile ]; then
+        echo "no Pkgfile found in $prtdir. Skipping."
+	    exit 1
+    fi
+
+    if [ ! -f "$prtdir"/.footprint ]; then
+        echo "no .footprint found in $prtdir. Skipping."
+	    exit 1
+    fi
+
+}
+
+getoptions () {
+# Name says it all.
+    while getopts rhvkfpo opt
+    do
+      case "$opt" in
+        r) userejected=1;;
+		k) keepworking=1;;
+		f) forcecreation=1;;
+		o) leaveowner=1;;
+		p) leaveperms=1;;
+		h) usage
+		   exit 0
+		   ;;
+		v) showversion
+		   exit 0
+		   ;;
+        \?) usage
+			exit -1
+			;;
+      esac
+    done
+	shift $(($OPTIND - 1))
+	prtdir="$@"
+}
+
+
+printparams() {
+# used for testing.
+    echo userejected: $userejected
+    echo test: $test
+}
+
+adjustperms(){
+# changes file permissions according to given string
+# (taken from footprint)
+	tonum $2
+	chmod `echo "$perms" reverse/$1`
+}
+
+adjustowner(){
+# changes file user/group according to given string
+# (taken from footprint)
+    chown `echo "$2" | sed 's|/|:|g'` reverse/$1
+}
+
+tonum() {
+# change rxwrxwrxw permission format with
+# numeric one (777). 
+# I know, this code sucks.
+    us=0
+	gr=0
+	ot=0
+	perms="000"
+    str=`echo $1 | tr "r" "4"`
+    str=`echo $str | tr "w" "2"`
+    str=`echo $str | tr "x" "1"`
+    str=`echo $str | tr "-" "0"`
+	
+	for i in 0 1 2
+	do
+	    let us=us+${str:$i:1}
+	done
+	for i in 3 4 5
+	do
+	    let gr=gr+${str:$i:1}
+	done
+	for i in 6 7 8
+	do
+	    let ot=ot+${str:$i:1}
+	done
+	
+	perms=$us$gr$ot
+}
+
+createpkg(){
+# creates tarred package
+    cd reverse
+	info "Creating "$PKGTAR
+	tar cfz ../"$PKGTAR" *
+	cd ..
+}
+###################################################
+# Main
+###################################################
+
+trap "interrupted" SIGHUP SIGINT SIGQUIT SIGTERM
+
+if [ $# -lt 1 ]; then
+  usage
+  exit -1
+fi
+
+userejected=0
+keepworking=0
+forcecreation=0
+goterror=0
+leaveowner=0
+leaveperms=0
+
+getoptions $@
+checkparams $@
+
+# removes existing working directory
+if [ -d "$prtdir"/reverse ]
+then
+    rm -r "$prtdir"/reverse
+fi
+
+# make working directory and initializes Pkgfile
+# vars
+mkdir -p "$prtdir"/reverse
+. "$prtdir"/Pkgfile
+PKGTAR="$name"#"$version"-"$release".pkg.tar.gz
+
+cd $prtdir
+
+# package already exists, exit if not in force method
+if [ -f "$PKGTAR" -a $forcecreation = 0 ]
+then
+    echo "$PKGTAR" exists, skipping.
+	exit 1
+fi	
+
+# the main loop to read entries in .footprint
+# and copy files to the <path>/reverse directory.
+# Could be implemented better.
+info "Copying files..."
+for f in `awk '{print $3}' .footprint`
+do
+    if [ ! -d /"$f" -a ! -f /"$f" ]
+	then
+	    error /$f" does not seem to be installed!"
+	    exit 1
+	fi
+		
+    if [ $userejected = 1 ]
+	then
+	    if [ -f "/var/lib/pkg/rejected/""$f" ]
+		then
+			note "Using /"$f" from rejected dir"
+            cp -p -R -f "/var/lib/pkg/rejected/""$f" reverse/"$f"	
+		else
+	        if [ -d /"$f" ]
+	        then
+                mkdir -p reverse/"$f"
+	        else
+		
+	            if [ -f /"$f" ]
+			    then
+                    cp -p -R /"$f" reverse/"$f"
+	            else
+			        goterror=1
+			    fi
+			fi	
+	    fi
+	else		
+	    if [ -d /"$f" ]
+	    then
+            mkdir -p reverse/"$f"
+	    else
+		    if [ -f /"$f" ]
+		    then
+                cp -p -R /"$f" reverse/"$f"
+		    else
+		        goterror=1	
+	        fi
+		fi	
+    fi
+done
+
+# now we create the package adjust owner and permssions
+if [ $goterror = 0 -o $forcecreation = 1 ]
+then
+	# adjust owner/group
+    if [ ! $leaveowner = 1 ]
+    then
+    	info "Adjusting files owner/group"
+        for f in `awk '{print $1"|"$2"|"$3}' .footprint`
+        do
+     	    fowner=`echo $f | awk -F"|" '{print $2}'`
+     	    fname=`echo $f | awk -F"|" '{print $3}'`
+			adjustowner $fname $fowner
+        done
+    fi
+    
+	# adjust permissions
+    if [ ! $leaveperms = 1 ]
+    then
+    	info "Adjusting files permissions"
+        for f in `awk '{print $1"|"$2"|"$3}' .footprint`
+        do
+     	    fperms=`echo $f | awk -F"|" '{print $1}'`
+     	    fname=`echo $f | awk -F"|" '{print $3}'`
+			adjustperms $fname "${fperms:1:9}"
+        done
+    fi
+	
+    # finally create the package
+    createpkg
+
+	# removes the working directory
+    if [ ! $keepworking = 1 ]
+  	then
+		info "Removing working dir"
+        rm -r reverse
+    fi
+  	  
+fi
+
+exit 0

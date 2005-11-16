@@ -1,0 +1,84 @@
+.\" 
+.\" prtsweep manual page.
+.\" (C) 2e003 by Martin Opel <mo@obbl-net.de> 
+.\"
+.TH prtsweep 1
+.SH NAME
+prtsweep \- sweep old files from the ports directories
+.SH SYNOPSIS
+.PP
+.B prtsweep
+[\-a] [\-d] [\-n] [PORTDIR ...]
+.SH DESCRIPTION
+
+The \fIprtsweep\fP program sweeps port directories from unneeded files.
+Unneeded files are either files which are not part of the source array 
+in the Pkgfile or package files with a name like 
+.PP
+.nf
+	name#version.pkg.tar.gz
+.fi
+.PP
+All other files are removed. If a port directory is empty, the whole directory
+can be removed with the \fI\-d\fP option. Even old package files can be removed
+with the \fI\-p\fP option.
+
+.SH OPTIONS
+The following options are supported:
+.TP
+.I "\-a"
+This is the automatic mode. In this mode \fIprtsweep\fP reads the ports
+directories
+from the supfiles in /etc/ports and cleans all ports in these directories.
+.TP
+.I "\-d"
+Removes empty directories completely. This happens when ports are moved for
+example from unstable to stable or vice versa. Note that this option only
+deletes empty directories, so accidently removing whole directory trees
+should not happen, even if you use
+.IP
+.nf
+	prtsweep \-d /
+.fi
+.IP
+To remove these moved ports completely you have to run \fIprtsweep\fP twice
+to first remove the files and second remove the empty directory.
+.TP
+.I "\-n"
+Dryrun. Do not remove anything really.
+.TP
+.I "\-p"
+Removes also pkgfiles. Only the newest pkgfile is kept in the
+ports directory.
+
+.SH EXAMPLES
+
+You can call \fIprtsweep\fP with one port:
+.PP
+.nf
+	root@hostname:/root # prtsweep /usr/ports/opt/dialog
+	=======> /usr/ports/opt/dialog
+	+ removing file dialog-0.9b-20020814.tgz
+.fi
+.PP
+Or you could call the automatic mode, which scans your supfiles in /etc/ports
+for all ports directories and cleans them automatically:
+.PP
+.nf
+	root@hostname:/root # prtsweep -a
+	=======> /usr/ports/clc/stable/atop
+	+ removing file atop-1.8.tar.gz
+	=======> /usr/ports/clc/stable/coldsync
+	+ removing file coldsync-2.2.5-gcc3.diff
+	+ removing file coldsync-2.2.5.tar.gz
+	=======> /usr/ports/clc/stable/dnsmasq
+	+ removing file dnsmasq-1.10.tar.gz
+	...
+.fi
+
+.SH AUTHOR
+Martin Opel <mo@obbl-net.de>
+.SH "SEE ALSO"
+prtwash(1)
+.SH BUGS
+The \fI\-p\fP option is not working yet.

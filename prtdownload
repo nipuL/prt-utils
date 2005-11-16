@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# $Id: prtdownload,v 1.1.1.1 2003/08/27 11:43:05 opel Exp $
+# (c) 2002, 2003 by Martin Opel <martin@obbl-net.de>
+#
+# May be redistributed and modified under the terms of the GPL
+# only usable with CRUX Linux, version 1.0 or higher
+#
+# USE AT YOUR OWN RISK
+#
+# This script scans your supfiles in /etc/ports to find out your port
+# directories and then runs through your ports directories and tries to
+# execute "pkgmk -do" for all ports. See "man 1 prtdownload" for details.
+#
+
+info() {
+    echo -e "=======> $@"
+}
+
+error() {
+    info "ERROR: $@"
+}
+
+interrupted() {
+    info "exiting..."
+    exit 1
+}
+
+getportdirs() {
+    for sup in /etc/ports/supfile.*; do
+	prefix=`cat $sup | grep "*default prefix=" | awk -F= '{ print $2 }'`
+	dirs=`cat $sup | grep -v "^#" | grep -v "^\$" | grep -v "^*"`
+	for dir in $dirs; do
+	    echo $prefix/$dir
+	done
+    done	
+}
+
+prtdownload() {
+    savedir=`pwd`
+    cd $1
+    for dir in *; do
+	if [ -d $dir ]; then
+	    (
+		cd $dir
+		info "downloading `pwd`"
+		pkgmk -do
+	    )
+	fi
+    done
+    cd $savedir
+}
+
+trap "interrupted" SIGHUP SIGINT SIGQUIT SIGTERM
+
+for dir in `getportdirs`; do
+    `basename $0` $dir
+done

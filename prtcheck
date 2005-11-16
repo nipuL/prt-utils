@@ -1,0 +1,85 @@
+#!/bin/sh
+#
+# $Id: prtcheck,v 1.1.1.1 2003/08/27 11:43:05 opel Exp $
+# (c) 2003, Martin Opel <mo@obbl-net.de>
+#
+# Utility to check a port for existence of .md5sum, .footprint and
+# the must-fields in Pkgfile. See "man 1 prtcheck" for details
+#
+# May be redistributed and modified under the terms of the GPL
+# only usable with CRUX Linux, version 1.0 or higher
+#
+# USE AT YOUR OWN RISK
+#
+
+
+msg() {
+	MSG="$1"
+	echo -n -e "====> $MSG"
+}
+
+warn() {
+	msg "WARNING: $1\n"
+}
+
+error() {
+	msg "ERROR: $1\n"
+	exit 1
+}
+
+ok() {
+	echo "OK."
+}
+
+#
+# read options
+#
+while [ $# -gt 0 ]; do
+	if [ "$1" = "--root" ]; then
+		convertfootprint="true"
+	else
+		error "unsupported option \"$1\""
+	fi
+	shift
+done
+
+#
+# Checking footprint
+#
+if [ ! -s .footprint ]; then
+	error "no footprint found or empty footprint!"
+fi
+if [ "$convertfootprint" = "true" ]; then
+	uid="`id -nu`"
+	gid="`id -ng`"
+	file=".footprint"
+	cat $file | sed -e "s,$uid/$gid,root/root," > $file.tmp
+	mv $file.tmp $file
+fi
+if [ `cat .footprint | grep -v "root/root" | wc -l` -gt 0 ]; then
+	warn "non-root users found!"
+	warn "  run \"`basename $0` --root\" to convert footprint"
+fi
+
+#
+# Checking Pkgfile
+#
+if [ ! -s Pkgfile ]; then
+	error "no Pkgfile found or Pkgfile empty!"
+fi
+desc="`cat Pkgfile | grep '^# Description:' | sed -e 's,# Description:,,'`"
+if [ "$desc" = "" ]; then
+	error "no Description in Pkgfile!"
+fi
+url="`cat Pkgfile | grep '^# URL:' | sed -e 's,# URL:,,'`"
+if [ "$url" = "" ]; then
+	error "no URL in Pkgfile!"
+fi
+packager="`cat Pkgfile | grep '^# Packager:' | sed -e 's,# Packager:,,'`"
+if [ "$packager" = "" ]; then
+	error "no Packager in Pkgfile!"
+fi
+depends="`cat Pkgfile | grep '^# Depends on:' | sed -e 's,# Depends:,,'`"
+if [ "$depends" = "" ]; then
+	warn "no dependencies, please check!"
+fi

@@ -1,0 +1,53 @@
+.\" 
+.\" prtcreate manual page.
+.\" (C) 2003 by Martin Opel <mo@obbl-net.de> 
+.\"
+.TH prtcreate 1
+.SH NAME
+prtcreate \- create a CRUX Pkgfile in current directory
+.SH SYNOPSIS
+.PP
+.B prtcreate
+.SH DESCRIPTION
+
+The \fIprtcreate\fP script creates a Pkgfile with all necessary fields in
+the current directory. The name of the port is the current directory and the
+release number is set to 1. All other fields are empty. If the Pkgfile already
+exists, an error message is printed and \fIprtcreate\fP exits with an error
+status of 1.
+
+.SH OPTIONS
+No options yet.
+
+.SH EXAMPLES
+
+Call \fIprtcreate\fP in a new created directory:
+.PP
+.nf
+	root@hostname:/root # mkdir my-new-port 
+	root@hostname:/root # cd my-new-port
+	root@hostname:/root/my-new-port # prtcreate
+	root@hostname:/root/my-new-port # cat Pkgfile
+
+	# $Id: prtcreate.1,v 1.1.1.1 2003/08/27 11:43:05 opel Exp $
+	# Description:
+	# URL:
+	# Maintainer:
+	# Packager:
+	# Depends on:
+
+	name=my-new-port
+	version=
+	release=1
+	source=()
+
+	build() {
+	        cd $name-$version
+	}
+
+.fi
+.PP
+
+.SH AUTHOR
+
+\fIprtcreate\fP was written by Martin Opel <mo@obbl-net.de> for CRUX Linux.

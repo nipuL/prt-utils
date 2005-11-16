@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# Print a list of files to download; allows to either download the
+# files required to install a package, all files (including those you
+# already have installed) to install a package, or all files required
+# to update your system
+#
+# Johannes Winkelmann <jw@tks6.net>
+
+version=1.1
+
+args=()
+for a in $@; do
+    if [ $a == "--all" ]; then
+	ALL="yes"
+    elif [ $a == "--diff" ]; then
+	DIFF="yes"
+    else
+	args=(${args[*]} $a)
+    fi
+done
+
+if [ "$args" = "" ] && [ ! "$DIFF" = "yes" ]; then
+    echo "Usage: `basename $0`        <port1> [<port2> ...]"
+    echo "       `basename $0` --all  <port1> [<port2> ...]"
+    echo "       `basename $0` --diff"
+    exit -1
+fi
+
+
+
+if [ "$DIFF" = "yes" ]; then
+    list=(`prt-get quickdiff`)
+elif [ "$ALL" = "yes" ]; then
+    list=(`prt-get quickdep $@`)
+else
+    list=(`prt-get depends ${args[*]}|grep "\[ "|awk '{print $3}'`)
+fi
+
+for p in ${list[*]}; do
+    . `prt-get path $p`/Pkgfile
+    for s in ${source[*]}; do
+	echo $s|grep tp:
+    done
+done

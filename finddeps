@@ -1,0 +1,52 @@
+#!/bin/bash
+# Find dependency of files in /usr/lib and /usr/bin of a port by looking at
+#  the output of ldd
+#
+# Johannes Winkelmann <jw at tks6 dot net>
+# awk stuff by Jürgen Daubert <jue at jue dot li>
+
+version=1.6
+
+export LD_LIBRARY_PATH=/usr/lib:/usr/X11/lib:$LD_LIBRARY_PATH
+
+function printDep() {
+    deps=()
+    files=(`awk -v p="^$1\n" 'BEGIN {RS="";}; $0 ~ p {print}' /var/lib/pkg/db|\
+            awk '/(sbin|bin|lib|libexec)\// {print}'`)
+    for f in ${files[*]}; do
+	if [ -f "/$f" ]; then
+	    deps=(${deps[*]} `ldd /$f 2> /dev/null | awk '!/(linux-gate)|( dynamic)/ {print $3}'`)
+	fi
+    done
+
+    deps=(`for t in  ${deps[*]}; do echo $t; done|sort|uniq`)
+
+  for d in ${deps[*]}; do
+    in=`echo $d|sed -e 's|^/||'`
+    awk -v search="\n$in" 'BEGIN {RS=""};$0 ~ search {print $1}' /var/lib/pkg/db
+  done
+}
+
+
+if [ "$1" = "" ]; then
+    echo "Usage: `basename $0` <port>"
+    exit -1
+fi
+
+prt-get isinst `basename $1` &> /dev/null
+if [ $? -ne 0 ]; then
+    echo "$1 is not installed"
+    exit -3
+fi
+
+pkgName=`basename $1`
+depPkg=`printDep $1|sort|uniq|grep -v $pkgName`
+
+for p in $depPkg; do
+    echo -n $p
+    coll=`prt-get printf "%p" --filter=$p|sed -e 's|.*/||'`
+    if [ "$coll" != "" ]; then
+	echo -n " ($coll)"
+    fi
+    echo ""
+done|sort -k 2

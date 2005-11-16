@@ -1,0 +1,46 @@
+#!/bin/sh
+
+#
+# This program creates symlinks in /usr/ports/installed to all the
+# ports you have installed.
+#
+
+installed_path=/usr/ports/installed
+
+# check if the dir exists
+if [ ! -d $installed_path ]; then
+   install -d $installed_path
+fi
+
+# Remove the link if the port is not installed.
+echo -n "Checking obsolete link for: "
+for i in $installed_path/*; do
+    base=${i##*/}
+    if [ -L $i ]; then
+	printf "$base "
+	if ! prt-get isinst $base > /dev/null; then
+	    rm $i
+	else
+	    # packages do not have to have ports
+	    if base_path=$(prt-get path $base 2>/dev/null); then
+		port_link=$(readlink $i)
+		if [ "$base_path" = "$port_link" ]; then
+		    rm $i
+		fi
+	    fi
+	fi
+    fi
+done
+
+# Add links for installed ports if they don't exist.
+echo
+echo -n "Checking missing link for: "
+for i in $(prt-get listinst); do
+    printf "${i##*/} "
+    # packages do not have to have ports
+    if pad=$(prt-get path $i 2> /dev/null); then
+	if [ ! -L $installed_path/$pad ]; then
+	    ln -s $pad $installed_path
+	fi
+    fi
+done

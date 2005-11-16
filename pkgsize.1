@@ -1,0 +1,45 @@
+.TH pkgsize 1
+.SH "NAME"
+.LP 
+pkgsize \- a bash script that displays package disk usage
+
+.SH "SYNOPSIS"
+.B pkgsize [-v] package_name
+.br
+.B pkgsize -h
+.br
+ 
+.SH "DESCRIPTION"
+\fIpkgsize\fP shows disk usage (in kilobytes) of installed port.
+It can also show disk usage of each file that is part of installed port.
+
+.SH "OPTIONS"
+
+.TP
+.B -v
+be more verbose (displays each file in a package usage)
+
+.TP
+.B -h
+print help and exit
+
+.SH "EXAMPLES"
+
+.TP
+.B pkginfo -i | awk '{print $1}' | pkgsize
+shows disk usage of every installed port
+
+.TP
+.B prt-get listinst | pkgsize
+same as above, but requires prt-get (obviously)
+
+.TP
+.B pkginfo -i | awk '{print $1}' | pkgsize | awk '$6>600{print $0}'
+hows only packages that exceed 600 kilobytes in size
+
+.TP
+.B pkginfo -i | awk '{print $1}' | pkgsize -v
+hows disk usage of every file in every installed port
+
+.SH "AUTHORS"
+Damir Saric <damir.saric@du.hinet.hr>

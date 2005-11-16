@@ -1,0 +1,283 @@
+#!/bin/bash
+#
+#   prtwash - a simple bash script for cleaning the port tree
+#             of the CRUX Linux distribution.
+#
+#	Copyright (c) 2003 by Simone Rota                  <sip@varlock.com>
+#
+#	*************************************************************************
+#	*                                                                       *
+#	* This program is free software; you can redistribute it and/or modify  *
+#	* it under the terms of the GNU General Public License as published by  *
+#	* the Free Software Foundation; either version 2 of the License, or     *
+#	* (at your option) any later version.                                   *
+#	*                                                                       *
+#	*************************************************************************
+#
+#   Took some inspiration and code from Martin Opel's prtsweep v1.6 script
+#
+#   **** USE AT YOUR OWN RISK ****
+#
+#   TODO  
+#         - a summary of files / bytes removed after the
+#           execution would be useful.
+#
+
+VERSION="0.6"
+CONFIGFILE="/etc/prt-get.conf"
+
+usage() {
+    echo "Usage: prtwash [-p] [-s] [-d] [-t] [-a] <path>"
+    exit 1
+}
+
+showversion() {
+    echo "prtwash" $VERSION
+	echo "(c) 2003 by Simone Rota"
+	echo "This program is distributed under the GNU GPL license"
+}
+
+interrupted() {
+    echo "=======> operation interrupted."
+    exit 1
+}
+
+checkparams() {
+# Do some test on given parameters.
+    if [ -z "$prtdir" -a "$auto" = 0 ]; then
+        usage
+		exit -1
+    fi	
+
+    if [ ! -d "$prtdir" -a "$auto" = 0 ]; then
+        echo "'$prtdir': directory not found"
+    	exit -1
+    fi
+
+    if [ ! -f "$prtdir"/Pkgfile -a "$auto" = 0 ]; then
+        echo "no Pkgfile found in $prtdir. Skipping."
+	    exit -1
+    fi
+}
+
+getoptions () {
+# Name says it all.
+    while getopts psdathv opt
+    do
+      case "$opt" in
+        p) removepackage=1;;
+        s) removesources=1;;
+        d) removeaddonfiles=1;;		   
+        t) test=1;;
+        a) auto=1;;
+		h) usage
+		   exit 0
+		   ;;
+		v) showversion
+		   exit 0
+		   ;;
+        \?) usage
+			exit -1
+			;;
+      esac
+    done
+	shift $(($OPTIND - 1))
+	prtdir="$@"
+}
+
+getdirs() {
+# scans /etc/prt-get.conf for port dirs to process
+	basedirs=()
+	singledirs=()
+
+	current=""
+	for s in `sed 's/^[ \t]*//;s/[ \t]*$//' \
+			 $CONFIGFILE|grep '^prtdir.*:'|sed 's/:/ /;s/,/ /;s/prtdir//;s/#.*//'`
+	do
+		if [ "`echo $s|grep '/'`" != "" ]; then
+			current=$s
+		else
+			if [ "$current" != "" ]; then
+				singledirs=(${singledirs[*]} $current/$s)
+			fi	
+		fi
+	done
+
+	for s in `sed 's/^[ \t]*//;s/[ \t]*$//;/:/d' \
+			 $CONFIGFILE|grep '^prtdir.*'|sed 's/prtdir//;s/#.*//'`
+	do
+		basedirs=(${basedirs[*]} $s)
+	done
+
+}
+
+
+remove() {
+# Removes a file/directory
+    if [ "$test" = 1 ]
+	then
+        echo "+ (t) removing" $1
+	else
+        echo "+ removing" $1
+		rm -r $1
+	fi
+}
+
+wash() {
+# Does the actual removal work.
+    if [ ! -f "$prtdir"/Pkgfile ]
+	# tested before, the test here is for
+	# auto (-a) command
+    then
+        echo "no Pkgfile found in $prtdir. Skipping."
+    else
+		tosave=() # array of files not to be deleted
+        . "$prtdir"/Pkgfile
+		packagename="$name"#"$version"-"$release"".pkg.tar.gz"
+
+		if [ ! "$removesources" = 1 ]
+		# keep sources
+		then
+        	for src in "${source[@]}"
+        	do 
+				tosave=( "${tosave[@]}" "`basename "$src"`" )
+        	done
+		fi
+		
+		if [ ! "$removepackage" = 1 ]
+		# keep package
+		then
+       		tosave=( "${tosave[@]}" "$packagename" )
+		fi
+        
+		if [ ! "$removeaddonfiles" = 1 ]
+		# keep additional and dot files
+		then
+       		tosave=( "${tosave[@]}" ".md5sum" )
+       		tosave=( "${tosave[@]}" ".footprint" )
+       		tosave=( "${tosave[@]}" "README" )
+       		tosave=( "${tosave[@]}" "FAQ" )
+            tosave=( "${tosave[@]}" "pre-install" )
+	      	tosave=( "${tosave[@]}" "post-install" )
+		fi
+
+		# keep Pkgfile. We always want to keep this nice funny file.
+ 		tosave=( "${tosave[@]}" "Pkgfile" )
+		
+  		# new in version 0.3 we (try to) always save files that are
+		# retrieved by cvs (non http(s) or ftp in source)
+		# ie patches, etc. This can be deleted with -d (extra files)
+		# option
+		if [ ! "$removeaddonfiles" = 1 ]
+		then
+      	    for src in "${source[@]}"
+            do 
+				#echo $src
+		    	if [ "${src:0:7}" != "http://" \
+				     -a "${src:0:8}" != "https://" \
+					 -a "${src:0:6}" != "ftp://" ]
+				then
+  	    		    #echo "`basename "$src"`" "will NOT be deleted"
+		            tosave=( "${tosave[@]}" "`basename "$src"`" )
+				fi
+     	    done
+		fi
+
+		for f in "$prtdir"/{*,.footprint,.md5sum}
+		do
+		    if ! keep $f
+			then
+			    remove $f
+			fi  
+		done
+	fi
+}
+
+keep() {
+# Chechs if filename item is in tosave[] array
+# return 1 if present, 0 if not.
+    item=$1
+    for i in "${tosave[@]}"
+	do
+	    if [ "$i" = `basename "$item"` ]
+		then
+	       return 0
+    	fi
+    done
+	  
+    return 1
+}
+
+printparams() {
+# used for testing.
+    echo removepackage: $removepackage
+    echo removesources: $removesources
+    echo removeaddonfiles: $removeaddonfiles
+    echo auto: $auto
+    echo test: $test
+}
+
+
+###################################################
+# Main
+###################################################
+
+trap "interrupted" SIGHUP SIGINT SIGQUIT SIGTERM
+
+if [ $# -lt 1 ]; then
+  usage
+  exit -1
+fi
+
+removepackage=0
+removesources=0
+removeaddonfiles=0
+test=0
+auto=0
+
+getoptions $@
+checkparams $@
+
+getdirs
+
+if [ "$auto" = 0 ]
+then
+    wash $prtdir
+else
+	if [ ! -f "$CONFIGFILE" ]
+	then
+	    echo "prtwash: cannot find configuration file:" $CONFIGFILE
+		exit -1
+	fi
+	echo "Analyzing port tree..."
+
+	# wash base dirs
+  	for dir in ${basedirs[*]}
+	do
+        if [ -d "$dir" ]
+    	then
+            for prtdir in "$dir"/*
+		    do
+			    if [ -d "$prtdir" ] 
+			    then
+		            wash $prtdir
+			    fi  
+	        done
+	    else
+	        echo "'$dir': directory not found, check your configuration file!" 
+	    fi 
+	done 
+	
+	# wash custom dirs (see prt-get.conf)
+	for prtdir in ${singledirs[*]}
+	do
+ 		if [ -d "$prtdir" ] 
+ 		then
+ 			wash $prtdir
+ 		else
+ 			echo "'$prtdir': directory not found, check your configuration file!"
+ 		fi  	
+	done
+fi
+
+exit 0

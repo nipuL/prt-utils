@@ -1,0 +1,12 @@
+Do a simple 
+
+   make install
+
+and enjoy the scripts.
+
+If you want to install to another location, use:
+
+   make PREFIX=/usr/local install
+
+
+Martin Opel <mo@obbl-net.de>

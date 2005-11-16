@@ -1,0 +1,187 @@
+#!/bin/sh
+#
+# pkgexport 
+# 05/24/2004
+#
+# Copyright (c) 2002-2004 by Andrew Green <crux@dorkatronix.org>
+# License: GNU General Public License (GPL)
+#
+# Script to build a package from installed components. 
+#
+# Should be useful if upgraded package fails 
+#
+# 
+COMMAND=$(basename $0)
+VERSION=0.7
+VERBOSE=0
+PKGNAME=""
+TARGET=$(pwd)
+ROOT=""
+
+#########
+# Usage
+#########
+usage() {
+echo "
+$COMMAND $VERSION
+options: [-h] [-v] [-r /pkg/root] <packagename> [outputfile/dir] 
+
+-r Directory of alternate package root.  See pkginfo(8)
+-h Usage/Help
+-v Verbose output
+
+Examples:
+
+Export a current package to 'package#1.2.4-1.pkg.tar.gz' in the current dir:
+$COMMAND currentpackage
+
+Export mozilla to '/tmp/mozilla#1.2.1-1.pkg.tar.gz': 
+$COMMAND mozilla /tmp
+
+Export pkgutils to '/root/pkgutils.tar.gz':
+$COMMAND pkgutils /root/pkgutils.tar.gz
+
+Export a different CRUX installation of samba:
+$COMMAND -r /mnt samba
+"
+exit 1
+}
+
+##########
+# pkginfo_l lists files inside a package (pkginfo -l $file)
+##########
+pkginfo_l() {
+
+FILES="/tmp/.pkgexport.$$"
+pkginfo $ROOT -l $1 > $FILES
+if [ $RET -ne 0 ]
+then
+	echo "Package $1 contains no files and/or pkginfo -l $1 failed."
+	exit 1
+fi
+
+}
+
+#########
+# pkginfo_i queries to see if a package is installed (pkginfo -i)
+#########
+pkginfo_i() {
+
+INSTALLED=(`pkginfo $ROOT -i | grep "^$1 "`)
+RET=$?
+
+if [ $RET -ne 0 ]
+then
+	echo "Package $1 is not installed."
+	exit 1
+fi
+
+}
+
+#########
+# exportpkg will build a pkgfile
+#########
+exportpkg() {
+
+pkgname=${INSTALLED[0]}
+pound="#"
+version=${INSTALLED[1]}
+suffix=".pkg.tar.gz"
+
+if [ -d $TARGET ]; then
+	FIRST=$(echo $TARGET | cut -c 1)
+	if [ "$FIRST" != "/" ]; then
+		newpkg=$(pwd)/$TARGET/$pkgname
+	else
+		newpkg=$TARGET/$pkgname
+	fi
+
+	newver=$version
+else
+	newpkg=$(pwd)/$TARGET
+	pound=""
+	newver=""
+	suffix=""
+fi
+
+BIGFILENAME="$newpkg$pound$newver$suffix"
+if [ -f "$BIGFILENAME" ]; then
+	echo "$BIGFILENAME" exists.  Exiting
+	exit 1
+fi
+
+if [ $VERBOSE = 1 ]; then
+	TARARGS="vvf"
+else
+	TARARGS="f"
+fi
+
+cd /
+tar cz$TARARGS "$BIGFILENAME" --no-recursion --files-from $FILES
+RET=$?
+
+if [ $RET -ne 0 ]
+then
+	echo "Tar: error in creating $BIGFILENAME."
+	rm -f "$BIGFILENAME"
+	exit 1
+fi
+
+# Get rid of our sucky temp-file.
+rm -f $FILES
+
+if [ $VERBOSE = 1 ]; then
+	echo ===============================================
+	echo
+	echo Package export information for current package:
+	echo
+	echo Name: $pkgname
+	echo Version: $version
+	echo 
+	echo Package saved as: $BIGFILENAME
+	echo 
+	echo ===============================================
+else
+	echo Package saved as: $BIGFILENAME
+fi
+
+}
+
+#########
+# Main !
+#########
+main() {
+
+if [ $# -eq 0 ]; then
+	usage
+fi
+
+while getopts :r:hv arg
+do
+	case $arg in
+	r)  ROOT="-r "$OPTARG;;
+	h)  usage;;
+	v)  VERBOSE=1;;
+	\?)  usage;;
+	:)   usage;;
+	esac
+done
+shift $((OPTIND - 1))
+
+# echo 1: $1 2: $2
+PKGNAME=$1
+
+if [ "$PKGNAME" = "" ]; then
+	usage
+fi
+if [ "$2" != "" ]; then
+	TARGET=$2
+fi
+
+pkginfo_i $PKGNAME
+pkginfo_l $PKGNAME
+exportpkg
+
+}
+
+main $*

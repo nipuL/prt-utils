@@ -1,0 +1,183 @@
+#!/usr/bin/env perl
+#
+# oldfiles - show outdated packages and sources for a CRUX system
+#
+# by Simone Rota <sip@varlock.com>
+# License: GNU GPL v2
+# 
+# Requires prt-get by Johannes Winkelmann
+
+#use warnings;
+use strict;
+use File::Basename;
+
+my %options = %{getoptions(@ARGV)};
+
+# Cannot specify -p -s together (use no options instead)
+if ( $options{"-p"} && $options{"-s"} ) {
+	usage();
+	exit 1;
+}
+
+# Assume both packages and sources if no options specified
+if ( !$options{"-p"} && !$options{"-s"} ) {
+	$options{"-p"} = 1;
+	$options{"-s"} = 1;
+}
+
+my $PKGMK_PACKAGE_DIR = "";
+my $PKGMK_SOURCE_DIR = "";
+
+# Read pkgmk.conf
+open(my $cfgfile, "/etc/pkgmk.conf") or die "Couldn't open /etc/pkgmk.conf";
+while (<$cfgfile>){
+	my $line = $_;
+	chomp($line);
+	$line =~ /^PKGMK_PACKAGE_DIR="(.*?)"|^PKGMK_SOURCE_DIR="(.*?)"/;
+	if ($1){
+		$PKGMK_PACKAGE_DIR = $1;
+	}
+	if ($2){
+		$PKGMK_SOURCE_DIR = $2;
+	}
+}
+close($cfgfile) or die "Could not close /etc/pkgmk.conf";
+
+# Check if dirs are specified / exists
+if ( $options{"-p"} ) {
+	if ($PKGMK_PACKAGE_DIR eq ""){
+		print "error: no PKGMK_PACKAGE_DIR specified in /etc/pkgmk.conf\n";
+		exit 1;
+	} else {
+		if (! -d $PKGMK_PACKAGE_DIR) {
+			print "error: $PKGMK_PACKAGE_DIR is not a directory\n";
+			exit 1;
+		}
+	}
+}
+if ( $options{"-s"} ) {
+	if ($PKGMK_SOURCE_DIR eq ""){
+		print "error: no PKGMK_PACKAGE_DIR specified in /etc/pkgmk.conf\n";
+		exit 1;
+	} else {
+		if (! -d $PKGMK_SOURCE_DIR) {
+			print "error: $PKGMK_SOURCE_DIR is not a directory\n";
+			exit 1;
+		}
+	}
+}
+
+# Found / current packages and sources
+my @packages;
+my @cpackages = ();
+my @sources;
+my @csources = ();
+
+# Current / found packages, current / found sources
+if ( $options{"-p"} ) {
+	my $packages = `find $PKGMK_PACKAGE_DIR -maxdepth 1 -type f`;
+	@packages=split("\n", $packages);
+}
+if ( $options{"-s"} ) {
+	my $sources = `find $PKGMK_SOURCE_DIR -maxdepth 1 -type f`;
+	@sources=split("\n", $sources);
+}
+
+# Get all ports through prt-get
+my @ports = `prt-get printf "%n|%v|%r|%p\n"`;
+
+foreach my $port (@ports) {
+    my ($name, $version, $release, $path) = split(/\|/, $port);
+	chop($path);
+
+	# Add current package
+	if ( $options{"-p"} ) {
+		push(@cpackages, "$PKGMK_PACKAGE_DIR/$name#$version-$release.pkg.tar.gz");
+	}
+
+	# Add current source(s)
+	if ( $options{"-s"} ) {
+		# Read Pkgfile
+		my $pkgfilename = "$path\/$name\/Pkgfile";
+		open FILE, "< $pkgfilename" or die "Couldn't open $pkgfilename";
+		local $/ = undef; 
+		my $pkgfile = <FILE>;
+		close FILE;
+
+		# Parse sources from Pkgfile
+		$pkgfile =~ s/\s{1,}/ /gi;			# remove multiple spaces
+		$pkgfile =~ s/\n//g;				# remove newlines
+		$pkgfile =~ s/\\//g;				# remove '\'
+		$pkgfile =~ /source=\((.*?)\)/;		# get source array contents
+		$pkgfile = $1;						# prepare some tea
+		# Add url(s)
+		my @psources = split(" ", $pkgfile);
+		foreach my $url (@psources) {
+			my @split = glob($url);
+			foreach my $s (@split) {
+				$s =~ s/\$name/$name/g;			# substitute $name
+				$s =~ s/\$version/$version/g;	# substitute $version
+				$s =~ s/\$release/$release/g;	# substitute $release
+				push(@csources, "$PKGMK_SOURCE_DIR/".basename($s));
+			}
+		}
+	}
+	
+
+} # foreach my $port 
+
+
+# Print outdated packages
+if ( $options{"-p"} ) {
+	printdiff(\@packages,\@cpackages);
+}
+
+# Print outdated sources
+if ( $options{"-s"} ) {
+	printdiff(\@sources,\@csources);
+}
+
+
+######################## subroutines ########################
+
+# Adapted  from Martin Opel's prtorphan script
+sub getoptions {
+  my @args = reverse @_;
+  my %options = ();
+  
+  while (my $argument = pop @args) {
+    if ( $argument eq "-p" ) {
+		$options{"-p"} = 1;
+    } elsif ( $argument eq "-s" ) {
+		$options{"-s"} = 1;
+	} else {
+		usage();
+		exit 1;
+	}
+  } 
+  return \%options;
+}
+
+# Show usage
+sub usage {
+	print "usage: oldfiles [-p|-s]\n";
+}
+
+# Print differences between two lists
+# (from O'Reilly Perl Cookbook)
+sub printdiff {
+	my ($A,$B) = @_;
+	my @A = @{$A};
+	my @B = @{$B};
+	my %seen; # lookup table
+	my @aonly;# answer
+	@seen{@B} = (); # build lookup table
+	
+	foreach my $item (@A) {
+		unless ( exists $seen{$item} ) {
+			push(@aonly, $item);
+			$seen{$item} = 1;
+			print "$item\n";
+		}
+	}	
+}

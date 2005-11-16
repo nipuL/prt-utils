@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# $Id: prtrej,v 1.4 2004/02/06 11:30:00 opel Exp $
+# (c) 2003,2004 by Martin Opel <mo@obbl-net.de>
+# (c) 2002 by Markus Ackermann <maol@symlink.ch>
+#
+# may be redistributed and modified under the terms of the GPL
+# only usable with CRUX Linux, version 0.9.2 or higher
+#
+# USE AT YOUR OWN RISK
+#
+# Interactive tool to ask user what he/she wants to do with a rejected file
+# in /var/lib/pkg/rejected requires opt/dialog to be installed. All
+# identical files are removed without a user's interaction
+
+TMP=/tmp/pkgrej$$
+OUT=/tmp/pkgout$$
+REJ=/var/lib/pkg/rejected
+
+cleanup() {
+    echo "Removed $count identical files"
+    rm -f $TMP $OUT
+}
+
+interrupted() {
+    echo "Interrupted..."
+    cleanup
+    exit 1
+}
+
+trap "interrupted" SIGHUP SIGINT SIGQUIT SIGTERM
+
+count=0
+
+if [ ! -d "$REJ" ]; then
+  echo "$REJ not found. Exiting"
+  exit 1
+fi
+
+for reject in `find $REJ -type f`; do
+    real=`echo $reject | sed -e "s#^$REJ##"`
+    if diff $real $reject >/dev/null; then
+	rm $reject
+	count=`expr $count + 1`
+    else
+	echo $reject differs
+    fi
+done
+
+cd $REJ
+for FILE in `find . -type f`; do
+    diff -u /$FILE $PWD/$FILE &> $TMP
+
+    dialog --no-shadow \
+	--title "diff `echo /$FILE $PWD/$FILE | sed 's#/\.##g'`" \
+	--textbox $TMP -1 -1 \
+	--menu "Make your selection:" 11 40 4 \
+	KEEP "Keep old file." \
+	INST "Install new file." \
+	EXIT "Exit immediately." \
+	"  " "Do nothing now." \
+	2> $OUT
+    
+    ACTION=`cat $OUT`
+    if [ "$ACTION" = "KEEP" ]; then
+	echo "Keeping old file, removing $PWD/$FILE."
+	rm $PWD/$FILE
+    elif [ "$ACTION" = "INST" ]; then
+	echo "Installing new file, overwriting /$FILE with $PWD/$FILE."
+	mv $PWD/$FILE /$FILE
+    elif [ "$ACTION" = "EXIT" ]; then
+	echo "Exiting..."
+	cleanup
+	exit 0
+    else
+	echo "not doing anything with $PWD/$1"
+    fi
+done
+
+cleanup

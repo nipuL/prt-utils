@@ -1,0 +1,49 @@
+.TH "pkgexport" "1" "0.7" "Andrew Green" "CRUX Pkgtools extras"
+.SH "NAME"
+.LP 
+pkgexport \- Create a CRUX native package from previously installed package components
+.SH "SYNTAX"
+.LP 
+pkgexport [\fIoptions\fP] 
+.SH "DESCRIPTION"
+.LP 
+pkgexport is a package management utility which creates installable CRUX packages from previously installed components.  Its primary purpose is to provide a means of creating backups of current packages usually before performing an upgrade.  In this regard it could be useful in providing quick recovery in the event of incompatibility or failure of the upgraded package.
+.SH "OPTIONS"
+.LP 
+.TP 
+\fB\fR<\fIpackagename\fP>
+Creates a package from the installed components of <\fIpackagename\fP>.
+.TP 
+\fB\fR[\fIoutputfile|dir\fP]
+Name of the file to be created.  outputfile can be specified with full, relative or no path.  If a directory is specified, pkgexport will create the file using the conventional CRUX package naming scheme: pkgname#version.pkg.tar.gz.
+.TP 
+\fB\-r </path>\fR
+Specify path to alternate installation root.  See pkginfo(8).
+.TP
+\fB\-v\fR
+Verbose output.
+.TP 
+\fB\-h\fR
+Output help information and exit.
+.SH "FILES"
+.LP 
+\fI/usr/bin/pkgexport\fP 
+.SH "EXAMPLES"
+.LP 
+To export/backup the "shadow" package, saving the package with the default name to the current directory:
+.LP 
+# pkgexport shadow
+.LP 
+Alternately, saving it under a different directory with the default name:
+.LP 
+# pkgexport shadow /var/lib/pkg
+.LP 
+Or saving it under a custom name:
+.LP 
+# pkgexport shadow mypackage.tar.gz
+.SH "AUTHORS"
+.LP 
+Andrew Green <crux@dorkatronix.org>
+.SH "SEE ALSO"
+.LP 
+pkginfo(8), pkgadd(8), pkgrm(8), pkgmk(8)

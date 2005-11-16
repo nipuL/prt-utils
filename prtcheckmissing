@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+#
+# $Id: prtcheckmissing,v 1.1 2003/10/27 15:26:50 opel Exp $
+
+use warnings;
+use strict;
+
+local $/ = ""; # read files paragraph-wise; see ``perldoc perlvar''
+
+open my $fh, "< /var/lib/pkg/db"
+  or die "Couldn't open package database!\n";
+
+while(<$fh>) {
+  my ($pkg_name, $pkg_version, @pkg_file) = split /\n/;
+  my @missing = grep ! -e "/$_", @pkg_file;
+  next if not @missing;
+
+  print map "/$_ $pkg_name\n", @missing;
+}         
+ 
+close($fh);
+

@@ -1,0 +1,73 @@
+0.7.0 -> 0.7.1
+- Removed warnings from oldfiles
+
+0.6.5 -> 0.7.0
+--------------
+- added findredundantdeps script
+- added pkg_installed script
+
+0.6.4 -> 0.6.5
+--------------
+- fixed config parser bug in prtorphan (trailing space
+  and / or comment in the middle of the line)
+
+0.6.3 -> 0.6.4
+--------------
+- fixed bug in prtwash config parser. Thanks to Jason Pacheco
+  for the  patch
+- prtwash: fixed spelling
+
+0.6.2 -> 0.6.3
+--------------
+- added "oldfiles" by Simone Rota (simone)
+- added "finddeps" by Johannes Winkelmann (simone)
+- added "dllist" by Johannes Winkelmann (simone)
+
+0.6.1 -> 0.6.2
+--------------
+- prtreverse replaced by pkgexport by Andrew Green (simone)
+
+0.6.0 -> 0.6.1
+------------
+- prtrej now checks if /var/lib/pkg/rejected exists (simone)
+
+0.5.1 -> 0.6
+------------
+- prtalien: new script, which does the same as "prtorphan -d"
+- prtsweep doesn't remove .nostrip file (opel)
+- prtorphan reads /etc/prt-get.conf instead of /etc/prt-wash.conf.
+  prtwash.conf was removed though. (opel)
+- prtrej now calls "diff -u"
+- scripts that need to cycle through the port tree now read
+  port directories from /etc/prt-get.conf.
+- prtcheckmissing is a new script, which scans the package db
+  /var/lib/pkg/db and looks in your filesystem, if the files really exist.
+  The most port is based on A. Pagaltzis' program published on the mailing
+  list.
+
+0.5 -> 0.5.1
+------------
+- prtorphan has a new option "-d directory" and scans the directory for
+  orphaned files.
+
+0.4.1 -> 0.5
+------------
+- new script prtorphan: script to list all orphaned packages. An orpaned
+  package is a package, for which no port exists in /usr/ports/base,
+  /usr/ports/opt, ...
+
+0.4 -> 0.4.1
+------------
+- pkgsize bugfixes
+
+0.3.x -> 0.4
+------------
+- pkgsize by Damir Saric <damir.saric@du.hinet.hr> was added.
+
+0.2.5 -> 0.3.0
+--------------
+- prtreverse by Simone Rota was added.
+
+0.2.4 -> 0.2.5
+--------------
+- prtwash.conf was adopted to the new clc scheme: contrib/unmaintained

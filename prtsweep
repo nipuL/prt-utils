@@ -1,0 +1,182 @@
+#!/bin/bash
+#
+# $Id: prtsweep,v 1.2 2003/12/17 21:17:02 opel Exp $
+# (c) 2002, 2003 by Martin Opel <martin@obbl-net.de>
+#
+# May be redistributed and modified under the terms of the GPL
+# only usable with CRUX Linux, version 1.0 or higher
+#
+# USE AT YOUR OWN RISK
+#
+# This script scans your supfiles in /etc/ports to find out your port
+# directories and then scans all ports for old files, which are not part
+# of the source-array in the Pkgfile and are not pkgfiles (name#version...).
+# All these old files are removed. For details see "man 1 prtsweep".
+#
+
+info() {
+    echo -e "=======> $@"
+}
+
+msg() {
+    echo -e "+ $@"
+}
+
+error() {
+    info "ERROR: $@"
+}
+
+interrupted() {
+    info "exiting..."
+    exit 1
+}
+
+getportdirs() {
+    for sup in /etc/ports/*.cvsup; do
+	prefix=`cat $sup | grep "*default prefix=" | awk -F= '{ print $2 }'`
+	dirs=`cat $sup | grep -v "^#" | grep -v "^\$" | grep -v "^*" | awk '{ print $1 }'`
+	for dir in $dirs; do
+	    echo $prefix/$dir
+	done
+    done	
+}
+
+remove() {
+    item=$1
+    if [ -f $item ]; then
+	if [ "$dryrun" = "1" ]; then
+	    msg "removing file $item (dryrun)"
+	else
+	    msg "removing file $item"	    
+	    rm $item
+	fi
+    elif [ -d $item ]; then
+	if [ "$dryrun" = "1" ]; then
+	    msg "removing directory $item (dryrun)"
+	    #rm -r $item
+	else
+	    msg "removing directory $item"
+	    rm -r $item
+	fi
+    fi
+}
+
+removeemptydir() {
+    if [ `find $1 | wc -l` -eq 1 ]; then
+	remove $1
+    else
+	info "cannot remove non-empty directory '$dir'"
+    fi
+}
+
+inlist() {
+    item=$1
+    shift
+    list="$@"
+
+    for i in $list; do
+	if [ "$i" = "$item" ]; then
+	    return 0
+	fi
+    done
+   
+    return 1
+}
+
+sweep() {
+    dir=$1
+    savedir=`pwd`
+    printedpwd="false"
+
+    if [ ! -d $dir ]; then
+	error "'`pwd`/$dir' is not a directory!"
+	usage
+    fi
+
+    if [ ! -f $dir/Pkgfile ]; then
+	info `pwd`/$dir
+	msg "no Pkgfile found, empty port '$dir'."
+	if [ "$delete" = "1" ]; then
+	    removeemptydir $dir
+	else
+	    msg "use '-d' to remove empty directories."
+	fi
+	return
+    fi
+    cd $dir
+    unset name version source pkgfiles
+    . Pkgfile
+    for f in ${source[@]}; do
+	pkgfiles=( `basename $f` ${pkgfiles[@]} )
+    done
+    for f in `ls -a`; do
+	if [ "$f" != ".footprint" -a "$f" != ".md5sum" -a \
+	    "$f" != "Pkgfile" -a "$f" != "README" -a "$f" != "." -a \
+            "$f" != ".nostrip" -a \
+	    "$f" != "post-install" -a "$f" != ".." ]; then
+	    if ! echo $f | grep '.*#.*\.pkg\.tar\.gz' >/dev/null; then
+		if ! inlist $f ${pkgfiles[@]}; then
+		    if [ "$printedpwd" = "false" ]; then
+			printedpwd="true"
+			info `pwd`
+		    fi
+		    remove $f
+		fi
+	    fi
+	fi
+    done
+    cd $savedir
+}
+
+getoptions() {
+    while [ "$1" = "-a" -o "$1" = "-d" -o "$1" = "-n" -o "$1" = "-p" ]; do
+	if [ "$1" = "-p" ]; then
+	    all=1
+	    shift
+	fi
+	if [ "$1" = "-n" ]; then
+	    dryrun=1
+	    shift
+	fi
+	if [ "$1" = "-d" ]; then
+	    delete=1
+	    shift
+	fi
+	if [ "$1" = "-a" ]; then
+	    auto=1
+	    shift
+	fi
+    done
+    ports="$@"
+}
+
+usage() {
+    echo 
+    echo "Usage: prtsweep [-a] [-d] [-n] [-p] [PORTDIR ...]"
+    echo
+    exit 1
+}
+
+trap "interrupted" SIGHUP SIGINT SIGQUIT SIGTERM
+
+getoptions $@
+
+if [ -z "$ports" -a "$auto" = "1" ]; then
+    for portdir in `getportdirs`; do
+	savedir=`pwd`
+	cd $portdir
+	for dir in *; do
+	    sweep $dir
+	done
+	cd $savedir
+    done
+    exit 0
+elif [ ! -z "$ports" ]; then
+    for dir in $ports; do
+	sweep $dir
+    done
+    exit 0
+fi
+
+usage
+exit 1

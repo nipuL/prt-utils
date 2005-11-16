@@ -1,0 +1,127 @@
+#!/usr/bin/perl
+#
+# $Id: prtorphan,v 1.5 2004/12/08 10:57:59 sip Exp $
+#
+# (c) 2003 by Martin Opel <mo@obbl-net.de>
+#
+
+use strict;
+
+my %options = %{getoptions(@ARGV)};
+
+if ( $options{"-d"} ) {
+  #
+  # Directory mode to find orphaned files in a directory subtree
+  # -d <directory>
+  #
+  my $dir = $options{"-d"};
+  unless ( -d $dir ) { exiterr("directory does not exist: $dir\n"); }
+  my %files = %{getinstalledfiles()};
+  open(FILES, "find $dir -type f |")
+    or exiterr("could not execute find");
+  while (<FILES>) {
+    chomp;
+    s/^\///;
+    if ( $files{$_} != 1 ) {
+      print "/$_\n";
+    }
+  }
+  close(FILES);
+}
+else {
+  # 
+  # Standard mode to find orhpaned ports
+  #
+  my %validports = %{getvalidports()};
+  open(PKGS, "pkginfo -i |")
+    or exiterr("could not execute 'pkginfo -i'");
+  while (<PKGS>) {
+    my ($port, $version) = split ' ';
+    print "$port\n" unless $validports{$port}; 
+  }  
+  close(PKGS);
+}
+
+exit 0;
+
+######################## subroutines ########################
+sub getinstalledfiles {
+  my %files = ();
+  open(PKGDB, "/var/lib/pkg/db")
+    or exiterr("could not open package database");
+  my $port = <PKGDB>;
+  my $version = <PKGDB>;
+  while (<PKGDB>) {
+    chomp;
+    if ( /^$/ ) {
+      $port = <PKGDB>;
+      $version = <PKGDB>;
+    }
+    else {
+      $files{$_} = 1;
+    }
+  }
+  close(PKGDB);
+  return \%files;
+}
+
+sub getoptions {
+  my @args = reverse @_;
+  my %options = ();
+  
+  while (my $argument = pop @args) {
+    if ( $argument eq "-d" ) {
+      $options{"-d"} = pop @args;
+    }
+    else {
+      exiterr("unknown option: $argument");
+    }
+  } 
+  return \%options;
+}
+
+sub getvalidports {
+  my %validports = ();
+  my @dirlist = @{getportdirs()};
+
+  while ( my $dir = pop @dirlist ) {
+    opendir(DIR, $dir)
+      or exiterr("could not read dir $dir");  
+    my $entry = "";
+    while ($entry = readdir(DIR)) {
+      next if ( $entry =~ /^\./ or ! -d "$dir/$entry" );
+      if ( -f "$dir/$entry/Pkgfile" ) {
+        $validports{$entry} = 1;
+      }
+    }
+    closedir(DIR);
+  }
+  return \%validports;
+}
+
+sub getportdirs {
+  my @ports = ();
+  my $conf = "/etc/prt-get.conf";
+
+  open(PORTS, $conf) 
+    or exiterr("could not open $conf");
+  while (<PORTS>) {
+    chomp;
+    if ( /^prtdir\s+/ ) {
+      my $port = $_;
+      $port =~ s/^prtdir\s+//;
+      $port =~ s/#(.*)$//;
+      $port =~ s/\s+$//;
+      push @ports, $port;
+    }
+  }
+  close(PORTS);
+  return \@ports;
+}
+
+sub exiterr {
+  my ($msg) = @_;
+
+  print "======> ERROR: $msg\n";
+  exit 1;
+}

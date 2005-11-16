@@ -1,0 +1,36 @@
+#!/bin/sh
+#
+# $Id: prtcreate,v 1.1.1.1 2003/08/27 11:43:05 opel Exp $
+# (c) 2003 by Martin Opel <martin@obbl-net.de>
+#
+# May be redistributed and modified under the terms of the GPL
+# only usable with CRUX Linux, version 1.0 or higher.
+#
+# USE AT YOUR OWN RISK
+#
+# This script creates a Pkgfile in the current working directory with
+# all necessary header information fields and an empty build() function.
+# The port name is the name of the current working directory.
+
+if [ -f Pkgfile ]; then
+	echo "Pkgfile exists!"
+	exit 1
+fi
+
+cat <<EOF > Pkgfile
+# \$Id\$
+# Description:
+# URL:
+# Maintainer:
+# Packager:
+# Depends on:
+
+name=`basename $PWD`
+version=
+release=1
+source=()
+
+build() {
+	cd \$name-\$version
+}
+EOF

@@ -1,0 +1,174 @@
+#!/bin/sh
+#
+# pkgsize - shows disk usage for CRUX packages/ports
+# Check man 1 pkgsize for more details 
+#
+# (c) Damir Saric <damir.saric@du.hinet.hr>
+#
+# May be redistributed and modified under the terms of the GPL
+# only usable with CRUX Linux
+#
+# USE AT YOUR OWN RISK
+#
+
+function interrupted() {
+	echo ""
+	echo "Interrupted."
+	clean
+	exit 1
+	}
+	
+function clean() {
+	if [ -f $TMP_LOCAL ]; then
+		rm $TMP_LOCAL
+	fi
+	if [ -f $TMP_WGET ]; then
+		rm $TMP_WGET
+	fi
+	}
+function error () {
+	echo "ERROR! --> $1"
+	}
+function usage() {
+	echo usage: pkgsize [options] [portname]
+	echo options:
+	echo "  -v,   --verbose             show more information (each file's size)"
+	echo "  -w,   --wget                show size to download (default if package not installed)"
+	echo "  -h,   --help                print help and exit"
+	exit
+	}
+
+function sizetodownload() {
+	
+	dirs=`cat /etc/ports/*sup* | grep prefix | sed s/.*=//g`
+	dir=`find $dirs -iname $portname 2>/dev/null | head -1 `
+	
+	if [ -z $dir ]; then
+	 error "$portname not a port!"
+	 exit 2
+	fi
+	
+	. $dir/Pkgfile
+
+	nrbytes=0
+	for FILE in ${source[@]}; do
+		testhttp=${FILE:0:4}
+
+		sizeofdl=""
+		if [ "$testhttp" = "http" ]; then
+		   wget $FILE -S --spider 2> $TMP_WGET
+		   	if [ $? -ne 0 ] && [ $nrbytes -eq 0 ]
+			 then
+			error "Not online, or no wget installed. "
+			clean
+			exit 1
+			fi
+			sizeofdl=`cat $TMP_WGET | awk '/Content-Length/{print $3}'`
+		   rm $TMP_WGET
+			
+		fi	
+		if [ -z "$sizeofdl" ]; then
+			sizeofdl=0
+		#	echo "sizeofdl - $sizeofdl"
+		fi
+		((nrbytes=nrbytes+sizeofdl))
+	
+		if [ "$verbose" = "true" ]; then
+
+			printf "%12s   %s\n" $sizeofdl $FILE
+		fi
+
+	done
+	echo "Total number of bytes to download for $portname is : $nrbytes"
+
+#	exit 0
+	
+}
+
+function main()
+{
+
+pkginfo -l $portname > $TMP_LOCAL 2>/dev/null
+
+if [ $? -ne 0 ]; then 
+	sizetodownload
+fi
+
+bytea=0
+byteall=0
+
+while read line
+do
+  file="/"$line
+
+  if [ -f $file ]; then
+    filesize=`du $file`
+
+    size=`echo $filesize | awk '{print $1}'`
+
+    #comment line below for more or less feedback
+    if [ "$verbose" = "true" ]; then
+      printf "%10s   %s\n" $size	$file
+    fi 
+
+    ((bytea=bytea+size))
+  fi
+done <$TMP_LOCAL
+
+#echo 
+echo "Total kilobytes for $portname :" $bytea
+#echo
+}
+
+
+trap "interrupted" SIGHUP SIGINT SIGQUIT SIGTERM
+TMP_LOCAL="/tmp/list.pkgsize"
+TMP_WGET="/tmp/wget.pkgsize"
+
+verbose="false"
+
+while [ $1 ]
+do
+case $1 in
+-v|-V) verbose="true"
+	shift   
+;;
+-h|-H|--help) usage
+	shift   
+;;
+-w|-W|--wget) online="true"
+	shift   
+;;
+*)    
+portnametemp=$1
+shift  
+;;
+esac
+done
+
+portname=$portnametemp
+
+#if [ "$online" = "true" ]; then
+#	sizetodownload
+#fi
+#if from stdin -- hopefully this works?
+if [ -z $portname ]; then
+  while read -p "Enter port name: " x
+  do
+      portname=$x
+	  if [ "$online" = "true" ]; then
+		sizetodownload
+	  else main
+	  
+	  fi
+      #main
+  done
+else if [ "$online" = "true" ]; then
+		sizetodownload
+	  else main
+	  
+	  fi 
+	  #main
+fi
+
+
