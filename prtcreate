@@ -18,7 +18,6 @@ if [ -f Pkgfile ]; then
 fi
 
 cat <<EOF > Pkgfile
-# \$Id\$
 # Description:
 # URL:
 # Maintainer:
