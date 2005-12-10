@@ -1,3 +1,6 @@
+NAME = prt-utils
+VERSION = 0.7.1
+
 TOOLS 	= prtcreate prtrej prtsweep prtcheck prtwash pkgexport pkgsize \
 	  prtorphan prtcheckmissing oldfiles finddeps dllist \
 	  findredundantdeps pkg_installed
@@ -6,6 +9,9 @@ PREFIX	= /usr
 MANDIR	= $(PREFIX)/man
 BINDIR	= $(PREFIX)/bin
 CONFDIR	= /etc
+
+all:
+	@echo "Use 'make install' to install prt-utils"
 
 install-man:
 	if [ ! -d $(DESTDIR)$(MANDIR)/man1 ]; then \
@@ -39,3 +45,11 @@ install-conf:
 	done
 
 install: install-man install-bin # install-conf
+
+dist:
+	@rm -rf ${NAME}-${VERSION}
+	@mkdir .${NAME}-${VERSION}
+	@cp * .${NAME}-${VERSION}
+	@mv .${NAME}-${VERSION} ${NAME}-${VERSION}
+	@tar czf ${NAME}-${VERSION}.tar.gz ${NAME}-${VERSION}
+	@rm -rf ${NAME}-${VERSION}
