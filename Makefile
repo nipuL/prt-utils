@@ -3,7 +3,7 @@ VERSION = 0.7.1
 
 TOOLS 	= prtcreate prtrej prtsweep prtcheck prtwash pkgexport pkgsize \
 	  prtorphan prtcheckmissing oldfiles finddeps dllist \
-	  findredundantdeps pkg_installed
+	  findredundantdeps pkg_installed revdeps
 
 PREFIX	= /usr
 MANDIR	= $(PREFIX)/man

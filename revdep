@@ -1,0 +1,65 @@
+#!/bin/bash
+# check linkage
+# Johannes Winkelmann, jw at tks6 dot net
+
+# Usage:
+#
+# Formatted listing:
+#   RD_VERBOSE=1 ./revdep
+# Include errorous files:
+#   RD_VERBOSE=2 ./revdep
+#
+# Pure list to be used as input to prt-get update
+#   ./revdep
+#
+# With an optional argument, only that port is checked
+
+check_linking() {
+    # set -x
+    err=0
+
+    files="`awk -v p="^$1\n" 'BEGIN {RS="";}; $0 ~ p {print}' /var/lib/pkg/db`"
+    for f in $files; do
+	if [ -f "/$f" ]; then
+	    file -b "/$f" |grep -q 'shared'
+            if [ $? -eq 0 ]; then
+		ldd  "/$f" 2> /dev/null |grep "not found" &> /dev/null
+		if [ $? -eq 0 ]; then
+		    [ "$RD_VERBOSE" = "2" ] && echo "  Error in: /$f"
+		    err=1
+		fi
+	    fi
+	fi
+    done
+
+    return $err
+}
+
+[ -n "$RD_VERBOSE" ] && echo "** calculating deps"
+
+if [ -z "$1" ]; then
+    ports=(`pkginfo -i|awk '{print $1}'`)
+    [ -n "$RD_VERBOSE" ] && echo "** Checking ${#ports[*]} ports"
+else
+    ports=($@)
+fi
+
+[ -n "$RD_VERBOSE" ] && echo "** check linking"
+for d in ${ports[*]}; do
+    if [ -n "$RD_VERBOSE" ]; then
+	echo -n "$d: "
+    fi
+    check_linking $d
+    
+    if [ $? -ne 0 ]; then
+        if [ -n "$RD_VERBOSE" ]; then
+            echo error
+	else
+	    echo $d
+	fi
+    else
+	if [ -n "$RD_VERBOSE" ]; then
+	    echo ok
+	fi
+    fi
+done
