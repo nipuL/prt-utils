@@ -1,5 +1,7 @@
 0.7.1 -> XXX
-- Added revdep script by Johannes Winkelmann
+- Added revdep by Johannes Winkelmann
+- Added portspage by Jukka Heino
+- Added pkgfoster by Jukka Heino
 
 0.7.0 -> 0.7.1
 - Removed warnings from oldfiles
