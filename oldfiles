@@ -70,7 +70,7 @@ foreach (split('\n', `prt-get printf "%p:%n:%v:%r\n"`)) {
 	if ( $options{"-s"} ) {
 		open MD5SUMS, "$path/$name/.md5sum" or next;
 		while (<MD5SUMS>) {
-			m/^[a-z0-9]{32}\s\s(\S+)\n/;
+			m/^[a-f0-9]{32}\s\s(\S+)\n/;
 			$wanted{$srcdir}{$1} = 1;
 		}
 		close MD5SUMS;
