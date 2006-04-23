@@ -1,2 +1,4 @@
-- rewrite / improve prtalien. Will re-add the script to cvs when it's
-  kinda stable(TM) (sip).
+- create general prt-utils man page with brief description
+  of all the tools
+- ditch prtsweep or merge it with prtwash
+  - reimplement prtwash in perl?
