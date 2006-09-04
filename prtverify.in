@@ -1,0 +1,167 @@
+#!/bin/sh
+#
+# prtverify 
+# Version 0.4.0 - 2006-09-02
+# Jürgen Daubert <jue at jue dot li> 
+
+
+MODDIR=@@LIBDIR@@/prtverify
+WHITELIST=$MODDIR/prtverify.wl
+PORTFILES='Pkgfile .footprint .md5sum'
+LOGLEVEL=15
+TESTS=$MODDIR/[023]*.awk
+
+
+### Functions
+
+checkargs() {
+    if [ $1 -lt 1 ]; then
+        usage
+    fi
+}
+
+perror() {
+    echo "===== Error: $1" > /dev/stderr
+    exit -1
+}
+
+usage() {
+    echo "Usage: ${0##*/} [options] port ...
+options:
+ -l loglevel
+ -m clean-repo
+ -m missing-deps  -c path_to_collection [-c path_to_collection ...]
+ -m file-conflict -c path_to_collection [-c path_to_collection ...]
+See prtverify(1) for a detailed description of all options."
+    exit 0
+}
+
+checkcollections() {
+    local dir
+    if [ -z "$COLLECTIONS" ]; then
+        perror "Need one or more collection. Use -c option to set."
+    fi
+
+    for dir in $COLLECTIONS; do
+        if [ ! -d $dir ]; then
+            perror "$dir is not a directory"
+            continue
+        fi
+        stat $dir/*/Pkgfile > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            perror "$dir is not a CRUX port-collection directory"
+        fi
+    done
+}
+
+cleanup() {
+    rm -f $FPDB
+    exit 0
+}
+
+checkmode() {
+    case $1 in
+    clean-repo)
+        TESTS=$MODDIR/[0123]*.awk
+        ;;
+    file-conflict)
+        MODE_FC=1
+        ;;
+    missing-deps)
+        MODE_MD=1
+        ;;
+    *)  usage
+        ;;
+    esac
+}
+
+getoptions() {
+    local option
+    while getopts :l:m:c: option
+    do
+        case  $option in
+        l)  LOGLEVEL="$OPTARG"
+            ;;
+        m)  checkmode "$OPTARG"
+            ;;
+        c)  COLLECTIONS="$COLLECTIONS $OPTARG"
+            ;;
+        *)  usage
+            ;;
+        esac
+    done
+    shift $(($OPTIND - 1))
+
+    PORTS=$@
+}
+
+findmodules() {
+    local mod
+    for mod in $TESTS; do
+        MODULES="$MODULES -f $mod"
+    done
+}
+
+mkfootprintdb() {
+    local dir files
+    FPDB=$(mktemp -p ${TMPDIR:-/tmp} prtverify.XXXXXXXX)
+
+    for dir in $COLLECTIONS; do
+        files="$files $dir/*/.footprint"
+    done
+
+    gawk \
+        -v FOOTPRINTDB="$FPDB" \
+        -f $MODDIR/00_prtverify_lib.awk \
+        -f $MODDIR/90_mk_footprint_db.awk \
+        $files
+}
+
+mkportslist() {
+    local dir
+    for dir in $COLLECTIONS; do
+        DEPPORTS="$DEPPORTS `ls -1 --color=none $dir`"
+    done
+}
+
+runtests() {
+    local dir
+    checkargs $#
+
+    for dir in $@; do
+        gawk \
+            -v LOG_LEVEL=$LOGLEVEL \
+            -v FOOTPRINTDB="$FPDB" \
+            -v PORT_FILES="$PORTFILES" \
+            -v WHITE_LIST="$WHITELIST" \
+            -v DEP_PORTS="$DEPPORTS" \
+            $MODULES $dir
+    done
+}
+
+main() {
+    checkargs $#
+    getoptions $@
+
+    if [ $MODE_FC ] || [ $MODE_MD ]; then
+        checkcollections
+        if [ $MODE_FC ]; then 
+            mkfootprintdb
+        fi
+        if [ $MODE_MD ]; then 
+            mkportslist
+        fi
+    fi
+
+    findmodules
+    runtests $PORTS
+    cleanup
+}
+
+### Main
+
+trap "cleanup" SIGHUP SIGINT SIGQUIT SIGTERM
+
+main "$@"
+
+# End of file

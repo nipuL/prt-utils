@@ -3,11 +3,13 @@ VERSION = 0.8.0
 
 TOOLS 	= prtcreate prtrej prtsweep prtcheck prtwash pkgexport pkgsize \
 	  prtorphan prtcheckmissing oldfiles finddeps dllist \
-	  findredundantdeps pkg_installed revdep portspage pkgfoster
+	  findredundantdeps pkg_installed revdep portspage pkgfoster \
+	  prtverify
 
 PREFIX	= /usr
 MANDIR	= $(PREFIX)/man
 BINDIR	= $(PREFIX)/bin
+LIBDIR  = $(PREFIX)/lib
 CONFDIR	= /etc
 
 all:
@@ -44,12 +46,27 @@ install-conf:
 	  fi; \
 	done
 
-install: install-man install-bin # install-conf
+install-lib:
+	for tool in $(TOOLS); do \
+	  if [ -d lib/$$tool ]; then \
+	    mkdir -p $(DESTDIR)$(LIBDIR)/$$tool; \
+	    cp lib/$$tool/* $(DESTDIR)$(LIBDIR)/$$tool; \
+	    chmod 644 $(DESTDIR)$(LIBDIR)/$$tool/*; \
+	  fi; \
+	done
 
-dist:
+prtverify:
+	sed "s|@@LIBDIR@@|$(LIBDIR)|" prtverify.in $< > prtverify
+
+install: prtverify install-man install-bin install-lib # install-conf
+
+clean:
+	rm -f prtverify
+
+dist: clean	
 	@rm -rf ${NAME}-${VERSION}
 	@mkdir .${NAME}-${VERSION}
-	@cp * .${NAME}-${VERSION}
+	@cp -r * .${NAME}-${VERSION}
 	@mv .${NAME}-${VERSION} ${NAME}-${VERSION}
 	@tar czf ${NAME}-${VERSION}.tar.gz ${NAME}-${VERSION}
 	@rm -rf ${NAME}-${VERSION}

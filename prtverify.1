@@ -1,0 +1,72 @@
+.TH prtverify 1 "Sep 02 2006" "prtverify 0.4.0" ""
+.SH NAME
+prtverify \- utility to check CRUX ports for typical errors 
+.SH SYNOPSIS
+\fBprtverify [options] <port> ...\fP
+.SH DESCRIPTION
+\fBprtverify\fP is a shell script which calls gawk with a bunch of 
+small modules, each of them containing one or more tests.
+
+Following tests are implemented yet:
+
+.TP
+.B port
+ - missing files Pkgfile/.footprint/.md5sum
+ - invalid files/directories (-m clean-repo option)
+.TP
+.B Pkgfile
+ - existence of name/version/release/source variables
+ - existence of Description/Maintainer/URL headers
+ - empty Description/Maintainer/URL headers
+ - invalid email address in Maintainer header
+ - match of portname to name variable
+ - wrong release number
+ - cd/rm command outside the work directory
+ - missing dependencies (-m missing-deps option)
+.TP
+.B .footprint
+ - world writable files/directories
+ - junk files like perllocal.pod
+ - invalid directories like /usr/info
+ - invalid users
+ - files not owned by root
+ - SUID/SGID files
+ - file-conflicts with other ports (-m file-conflict option)
+.SH OPTIONS
+.TP
+.B -l <loglevel>
+All test are categorized into 4 levels, from FATAL to INFO, which
+can be used to adjust the output of prtverify.
+Set loglevel to 8 for INFO, 4 for WARN, 2 for ERROR and 1 for FATAL
+errors. Sum them up to show combined loglevels, e.g. 12 for WARN
+and INFO errors. Default is 15, which shows all error messages.
+.TP
+.B -m clean-repo
+If this mode is set, an additional test for invalid files
+like *.pkg.tar.gz or invalid directories like .svn is selected.
+Only sensible for clean repositories, of course.
+.TP
+.B -m missing-deps -c <path_to_collection> [-c <path_to_collection> ...]
+Adds a test for missing dependencies. The test takes the arguments set 
+by the 'Depends on'-header and looks for a complying directory in the 
+path specified by the -c option. Multiple -c options are allowed.
+.TP
+.B -m file-conflict -c <path_to_collection> [-c <path_to_collection> ...]
+Adds a test for file-conflicts with other ports. The ports .footprint
+entries are compared with a list of files from the ports specified
+with the -c options.
+
+\fBNote:\fP the test is very time-consuming if you run it over a large 
+number of collections !
+.SH WHITELIST
+To avoid messages for errors which are known and accepted \fBprtverify\fP 
+uses a whitelist to hide those. 
+The whitelist is located at \fI/usr/lib/prtverify/prtverify.wl\fP.
+.SH FILES
+ \fI/usr/lib/prtverify/*.awk\fP
+ \fI/usr/lib/prtverify/prtverify.wl\fP
+.SH CREDITS
+I'd like to thanks Johannes Winkelmann for the initial idea for such a tool
+and for many suggestions and contributions.
+.SH AUTHOR
+Jürgen Daubert <juergen.daubert@t-online.de>
