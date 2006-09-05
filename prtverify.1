@@ -7,7 +7,7 @@ prtverify \- utility to check CRUX ports for typical errors
 \fBprtverify\fP is a shell script which calls gawk with a bunch of 
 small modules, each of them containing one or more tests.
 
-Following tests are implemented yet:
+The following tests are implemented:
 
 .TP
 .B port
@@ -35,11 +35,11 @@ Following tests are implemented yet:
 .SH OPTIONS
 .TP
 .B -l <loglevel>
-All test are categorized into 4 levels, from FATAL to INFO, which
+All tests are categorized into 4 levels, from FATAL to INFO, which
 can be used to adjust the output of prtverify.
 Set loglevel to 8 for INFO, 4 for WARN, 2 for ERROR and 1 for FATAL
 errors. Sum them up to show combined loglevels, e.g. 12 for WARN
-and INFO errors. Default is 15, which shows all error messages.
+and INFO errors. The default is 15, which shows all error messages.
 .TP
 .B -m clean-repo
 If this mode is set, an additional test for invalid files
@@ -66,7 +66,7 @@ The whitelist is located at \fI/usr/lib/prtverify/prtverify.wl\fP.
  \fI/usr/lib/prtverify/*.awk\fP
  \fI/usr/lib/prtverify/prtverify.wl\fP
 .SH CREDITS
-I'd like to thanks Johannes Winkelmann for the initial idea for such a tool
+I'd like to thank Johannes Winkelmann for the initial idea for such a tool
 and for many suggestions and contributions.
 .SH AUTHOR
 Jürgen Daubert <juergen.daubert@t-online.de>
