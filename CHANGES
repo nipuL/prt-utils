@@ -1,4 +1,9 @@
+0.8.0 -> 0.9.0
+--------------
+- Added prtverify by Juergen Daubert
+
 0.7.1 -> 0.8.0
+--------------
 - Added revdep by Johannes Winkelmann
 - Added portspage by Jukka Heino
 - Added pkgfoster by Jukka Heino
@@ -6,6 +11,7 @@
   added custom keep list /etc/oldfiles.conf
 
 0.7.0 -> 0.7.1
+--------------
 - Removed warnings from oldfiles
 
 0.6.5 -> 0.7.0
