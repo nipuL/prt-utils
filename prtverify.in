@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # prtverify 
-# Version 0.4.0 - 2006-09-02
+# Version 0.4.1 - 2006-09-28
 # Jürgen Daubert <jue at jue dot li> 
 
 
@@ -21,7 +21,7 @@ checkargs() {
 }
 
 perror() {
-    echo "===== Error: $1" > /dev/stderr
+    echo "=====  Error: $1" > /dev/stderr
     exit -1
 }
 
@@ -47,8 +47,7 @@ checkcollections() {
             perror "$dir is not a directory"
             continue
         fi
-        stat $dir/*/Pkgfile > /dev/null 2>&1
-        if [ $? -ne 0 ]; then
+        if [ -z "$(eval echo "$dir/*/Pkgfile")" ]; then
             perror "$dir is not a CRUX port-collection directory"
         fi
     done
@@ -160,6 +159,7 @@ main() {
 
 ### Main
 
+shopt -s nullglob
 trap "cleanup" SIGHUP SIGINT SIGQUIT SIGTERM
 
 main "$@"
