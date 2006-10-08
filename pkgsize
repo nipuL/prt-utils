@@ -102,7 +102,7 @@ do
   file="/"$line
 
   if [ -f $file ]; then
-    filesize=`/usr/bin/du $file`
+    filesize=`/usr/bin/du -k $file`
 
     size=`echo $filesize | awk '{print $1}'`
 
