@@ -19,7 +19,7 @@ install-man:
 	if [ ! -d $(DESTDIR)$(MANDIR)/man1 ]; then \
 	  mkdir -p $(DESTDIR)$(MANDIR)/man1; \
 	fi
-	for manpage in $(TOOLS); do \
+	for manpage in $(TOOLS) prt-utils; do \
 	  if [ -f $$manpage.1 ]; then \
 	    cp $$manpage.1 $(DESTDIR)$(MANDIR)/man1/; \
 	    chmod 644 $(DESTDIR)$(MANDIR)/man1/$$manpage.1; \
@@ -61,7 +61,7 @@ prtverify:
 install: prtverify install-man install-bin install-lib # install-conf
 
 clean:
-	rm -f prtverify
+	@rm -f prtverify
 
 dist: clean	
 	@rm -rf ${NAME}-${VERSION}

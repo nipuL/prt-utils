@@ -1,4 +1,2 @@
-- create general prt-utils man page with brief description
-  of all the tools
 - ditch prtsweep or merge it with prtwash
-  - reimplement prtwash in perl?
+- reimplement prtwash in perl?
