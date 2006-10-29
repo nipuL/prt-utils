@@ -1,4 +1,4 @@
-.TH prtverify 1 "Sep 02 2006" "prtverify 0.4.0" ""
+.TH prtverify 1 "Oct 29 2006" "prtverify 0.4.1" ""
 .SH NAME
 prtverify \- utility to check CRUX ports for typical errors 
 .SH SYNOPSIS
@@ -31,6 +31,7 @@ The following tests are implemented:
  - invalid users
  - files not owned by root
  - SUID/SGID files
+ - permission collisions with directories provided by core/filesystem
  - file-conflicts with other ports (-m file-conflict option)
 .SH OPTIONS
 .TP
