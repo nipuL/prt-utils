@@ -21,7 +21,7 @@ checkargs() {
 }
 
 perror() {
-    echo "=====  Error: $1" > /dev/stderr
+    echo "=====  Error: $1" >&2
     exit -1
 }
 
@@ -160,7 +160,7 @@ main() {
 ### Main
 
 shopt -s nullglob
-trap "cleanup" SIGHUP SIGINT SIGQUIT SIGTERM
+trap "cleanup" HUP INT QUIT TERM
 
 main "$@"
 
