@@ -1,5 +1,11 @@
 0.9.0 -> 0.9.1
-- Complete list of core ports for pkgfoster
+- Bugfix: complete list of core ports for pkgfoster
+- prtverify: new test for permission-collisions with directories
+  provided by core/filesystem, suggested by Mark Rosenstand
+- prtverify: compatibility improvements, patch by Han Boetes
+- prtverify: new rule to find localized man-pages
+- pkgsize: forced -k option, call /usr/bin/du to avoid aliasing  
+- Added prt-utils man page
 
 0.8.0 -> 0.9.0
 --------------
