@@ -1,2 +1,3 @@
+- pkgfoster: avoid using hardcoded core ports
 - ditch prtsweep or merge it with prtwash
 - reimplement prtwash in perl?
