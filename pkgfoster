@@ -12,7 +12,21 @@
 #
 
 PRT_GET=prt-cache
-PKGRM="sudo pkgrm"
+
+function PKGRM
+{
+	if [ $UID -ne 0 ]; then
+		SUDO="`which sudo 2>/dev/null`"
+		if [ -z "$SUDO" ]; then
+			su -c "pkgrm $1"
+		else
+			sudo pkgrm $1
+		fi
+	else
+		pkgrm $1
+	fi
+}
+
 BASE="autoconf automake bash bc bin86 bindutils binutils bison bzip2 coreutils cpio curl db dcron dhcpcd diffutils e2fsprogs ed expat file filesystem findutils flex gawk gcc gdbm gettext glibc grep groff grub gzip hdparm hotplug httpup iptables jfsutils kbd less libstdc++-compat libtool libusb lilo m4 make man man-pages mktemp module-init-tools nasm ncurses netkit-base netkit-ftp netkit-telnet net-tools nfs-utils openssh openssl patch pciutils perl pkg-config pkgutils portmap ports ppp procps prt-get psmisc rc rdate readline reiserfsprogs rpm2targz rsync sed sendmail shadow slocate strace sysfsutils sysklogd sysvinit tar tcp_wrappers tcsh time traceroute udev unzip usbutils util-linux vim wget which xfsprogs zip zlib"
 
 touch ~/.keepers
@@ -37,7 +51,7 @@ while true ; do
 			read ANSWER
 
 			if [ "$ANSWER" == "y" ] ; then
-				$PKGRM $PACKAGE
+				PKGRM $PACKAGE
 				RECHECK=1
 			else
 				echo $PACKAGE >> ~/.keepers
