@@ -1,7 +1,7 @@
 #
 # 05_file_check.awk
 #
-# Version 0.1.8 - 2006-08-30
+# Version 0.2.0 - 2008-05-21
 # Jürgen Daubert <jue at jue dot li> 
 #
 # Tests for the mandatory port files
@@ -15,12 +15,18 @@
 
 
 
-function readwhitelist(file,   line)
+function readwhitelist(filelist,   f,af,line)
 {
-    if (system("test -f " file) != 0)
-        return
-    while ((getline line < file) > 0)
-        WLIST[line]
+    split(filelist,af)
+
+    for (f in af) {
+        if (system("test -f " af[f]) != 0) {
+            usr_error("Error: file " af[f] " not found!")   
+            continue
+        }
+        while ((getline line < af[f]) > 0)
+            WLIST[line]
+    }
 }
 
 

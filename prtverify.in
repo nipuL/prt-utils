@@ -1,12 +1,12 @@
 #!/bin/sh
 #
 # prtverify 
-# Version 0.4.1 - 2006-09-28
+# Version 0.4.2 - 2008-05-21
 # Jürgen Daubert <jue at jue dot li> 
 
 
 MODDIR=@@LIBDIR@@/prtverify
-WHITELIST=$MODDIR/prtverify.wl
+WHITELIST=$(ls -1 --color=none $MODDIR/*.wl)
 PORTFILES='Pkgfile .footprint .md5sum'
 LOGLEVEL=15
 TESTS=$MODDIR/[023]*.awk
