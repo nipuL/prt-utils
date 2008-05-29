@@ -1,3 +1,11 @@
+0.9.1 ->
+- Bugfix: fix regexp for finding rm/cd commands in prtverify
+- prtverify: WHITELIST is now a array of files, so it's possible
+  to add additional lists or even a special directory.
+  Default is /usr/lib/prtverify/*.wl
+- prtverify: whitelist update
+
+
 0.9.0 -> 0.9.1
 - Bugfix: complete list of core ports for pkgfoster
 - prtverify: new test for permission-collisions with directories
