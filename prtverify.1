@@ -1,4 +1,4 @@
-.TH prtverify 1 "Oct 29 2006" "prtverify 0.4.1" ""
+.TH prtverify 1 "May 21 2008" "prtverify 0.4.2" ""
 .SH NAME
 prtverify \- utility to check CRUX ports for typical errors 
 .SH SYNOPSIS
@@ -61,8 +61,8 @@ with the -c options.
 number of collections !
 .SH WHITELIST
 To avoid messages for errors which are known and accepted \fBprtverify\fP 
-uses a whitelist to hide those. 
-The whitelist is located at \fI/usr/lib/prtverify/prtverify.wl\fP.
+uses one or more whitelists to hide those. 
+The whitelists are located at \fI/usr/lib/prtverify/*.wl\fP.
 .SH FILES
  \fI/usr/lib/prtverify/*.awk\fP
  \fI/usr/lib/prtverify/prtverify.wl\fP
