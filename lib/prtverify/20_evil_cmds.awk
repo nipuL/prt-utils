@@ -1,7 +1,7 @@
 #
 # 20_evil_cmds.awk
 #
-# Version 0.1.2 - 2006-07-14
+# Version 0.1.3 - 2008-05-21
 # Jürgen Daubert <jue at jue dot li> 
 #
 # Two test to find malicious rm and cd commands like 'rm -rf /usr'.
@@ -18,10 +18,10 @@
 
 loglevel_ok(FATAL) && FILENAME ~ PKGFILE {
 
-    if (match($0, /\<rm\>/)) {
+    if (match($0, /(^|[[:blank:]])+rm[[:blank:]]+/)) {
 
         a = substr($0, RSTART)
-        
+
         while ($0 ~ /\\$/) {
             getline 
             a = a $0
@@ -37,7 +37,7 @@ loglevel_ok(FATAL) && FILENAME ~ PKGFILE {
     }
 
 
-    if ($0 ~ /\<cd\>/) {
+    if ($0 ~ /(^|[[:blank:]])+cd[[:blank:]]+/) {
         for (c=1; c<=NF; c++) {
             if ($c == "cd" && $(c+1) ~ /^\//)
                 perror(FATAL, "Use of cd to go outside the workdir, Pkgfile line " NR)
