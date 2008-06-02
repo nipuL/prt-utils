@@ -130,6 +130,7 @@ sub parse_pkgfile
 				my $value = $2;
 				$value =~ s/</&lt;/g;
 				$value =~ s/>/&gt;/g;
+				$value =~ s/&/&amp;/g;
 				$parsed{$key} = $value;
 			}
 			elsif ($_ =~ /^version=(.*)$/)
