@@ -15,6 +15,7 @@ INFO   core/iputils ............. suid file found: bin/ping
 INFO   core/iputils ............. suid file found: bin/ping6
 INFO   core/iputils ............. suid file found: usr/sbin/traceroute6
 WARN   core/libtool ............. junk file found: usr/share/libtool/libltdl/COPYING.LIB
+INFO   core/mlocate ............. sgid file found: usr/bin/locate
 INFO   core/netkit-base ......... suid file found: bin/ping
 INFO   core/nfs-utils ........... suid file found: sbin/mount.nfs
 INFO   core/openssh ............. suid file found: usr/lib/ssh/ssh-keysign
