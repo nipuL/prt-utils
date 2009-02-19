@@ -17,7 +17,13 @@ if [ -f Pkgfile ]; then
 	exit 1
 fi
 
-cat <<EOF > Pkgfile
+NAME=`basename $PWD`
+
+if [ "$1" -a -e "$HOME/.prtcreate/$1" ]; then
+    cp "$HOME/.prtcreate/$1" Pkgfile
+    sed "s/%NAME%/$NAME/" -i Pkgfile
+else
+    cat <<EOF > Pkgfile
 # Description:
 # URL:
 # Maintainer:
@@ -33,3 +39,5 @@ build() {
 	cd \$name-\$version
 }
 EOF
+fi
+

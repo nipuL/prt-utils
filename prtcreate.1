@@ -16,6 +16,13 @@ release number is set to 1. All other fields are empty. If the Pkgfile already
 exists, an error message is printed and \fIprtcreate\fP exits with an error
 status of 1.
 
+If a file name matching the specified profile exists in ~/.prtcreate/ that file
+is used to create the Pkgfile instead. Otherwise the internally
+defined pkgfile is used
+
+Currently only one template variable is supported \fI%NAME%\fP which is used 
+to insert the name of the package. 
+
 .SH OPTIONS
 No options yet.
 
