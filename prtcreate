@@ -19,6 +19,10 @@ fi
 
 NAME=`basename $PWD`
 
+if [ -e "$HOME/.prtcreaterc" ]; then
+	. "$HOME/.prtcreaterc"
+fi
+
 if [ "$1" -a -e "$HOME/.prtcreate/$1" ]; then
     cp "$HOME/.prtcreate/$1" Pkgfile
     sed "s/%NAME%/$NAME/" -i Pkgfile
@@ -26,8 +30,8 @@ else
     cat <<EOF > Pkgfile
 # Description:
 # URL:
-# Maintainer:
-# Packager:
+# Maintainer: $PACKAGER
+# Packager: $PACKAGER
 # Depends on:
 
 name=`basename $PWD`
