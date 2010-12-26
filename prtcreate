@@ -19,6 +19,11 @@ fi
 
 NAME=`basename $PWD`
 
+if [ $# -gt 1 ]; then
+	echo "usage: $0 [type]"
+	exit 1
+fi
+
 if [ -e "$HOME/.prtcreaterc" ]; then
 	. "$HOME/.prtcreaterc"
 fi
